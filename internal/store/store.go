@@ -44,7 +44,21 @@ func (s *Store) DB() *sql.DB { return s.db }
 func (s *Store) Close() error { return s.db.Close() }
 
 func (s *Store) migrate(ctx context.Context) error {
-	current, err := s.currentVersion(ctx)
+	conn, err := s.db.Conn(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	if _, err := conn.ExecContext(ctx, `BEGIN IMMEDIATE`); err != nil {
+		return err
+	}
+	committed := false
+	defer func() {
+		if !committed {
+			_, _ = conn.ExecContext(context.Background(), `ROLLBACK`)
+		}
+	}()
+	current, err := currentVersion(ctx, conn)
 	if err != nil {
 		return err
 	}
@@ -53,24 +67,28 @@ func (s *Store) migrate(ctx context.Context) error {
 		if v <= current {
 			continue
 		}
-		tx, err := s.db.BeginTx(ctx, nil)
-		if err != nil {
-			return err
-		}
-		if _, err := tx.ExecContext(ctx, mig); err != nil {
-			_ = tx.Rollback()
+		if _, err := conn.ExecContext(ctx, mig); err != nil {
 			return fmt.Errorf("migration v%d: %w", v, err)
 		}
-		if err := tx.Commit(); err != nil {
-			return err
-		}
 	}
+	if _, err := conn.ExecContext(ctx, `COMMIT`); err != nil {
+		return err
+	}
+	committed = true
 	return nil
 }
 
 func (s *Store) currentVersion(ctx context.Context) (int, error) {
+	return currentVersion(ctx, s.db)
+}
+
+type versionQuerier interface {
+	QueryRowContext(context.Context, string, ...any) *sql.Row
+}
+
+func currentVersion(ctx context.Context, q versionQuerier) (int, error) {
 	var v sql.NullInt64
-	err := s.db.QueryRowContext(ctx, `SELECT MAX(version) FROM schema_version`).Scan(&v)
+	err := q.QueryRowContext(ctx, `SELECT MAX(version) FROM schema_version`).Scan(&v)
 	if err == nil && v.Valid {
 		return int(v.Int64), nil
 	}

@@ -37,9 +37,9 @@ func queryCmd(name, short string, dataTypes []string, rollups bool) *cobra.Comma
 			if name == "daily" {
 				pointTypes = dailyPointTypes(types)
 			}
-			var rows []store.DataPointRow
+			rows := make([]store.DataPointRow, 0)
 			if name == "daily" && len(pointTypes) == 0 {
-				rows = nil
+				rows = rows[:0]
 			} else {
 				qrows, err := st.QueryDataPoints(ctx, pointTypes, since, until, limit)
 				if err != nil {
@@ -58,6 +58,9 @@ func queryCmd(name, short string, dataTypes []string, rollups bool) *cobra.Comma
 				for i := range rows {
 					rows[i].RawJSON = ""
 				}
+			}
+			if rows == nil {
+				rows = make([]store.DataPointRow, 0)
 			}
 			if flags.jsonOut {
 				return output.JSON(cmd.OutOrStdout(), rows)

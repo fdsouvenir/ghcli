@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.0.3 - 2026-05-17
+
+### Changed
+
+- Embedded `v1.0.3` as the default CLI version so `go install
+  github.com/fdsouvenir/ghcli@v1.0.3` reports a tagged version without custom
+  linker flags.
+- Changed empty JSON query results from `null` to `[]` for easier agent
+  handling.
+- Serialized SQLite schema migrations with `BEGIN IMMEDIATE` so concurrent
+  first-run commands do not race while creating a new archive.
+- Updated bundled skill install metadata to
+  `github.com/fdsouvenir/ghcli@v1.0.3`.
+
 ## v1.0.2 - 2026-05-17
 
 ### Changed

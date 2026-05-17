@@ -9,7 +9,7 @@ Web API.
 
 ## Status
 
-Current release: `v1.0.2`
+Current release: `v1.0.3`
 
 This is the first stable public release. Google Health API availability still
 depends on the account, granted scopes, connected devices, and Google-side API
@@ -33,7 +33,7 @@ behavior.
 Install a tagged release:
 
 ```sh
-go install github.com/fdsouvenir/ghcli@v1.0.2
+go install github.com/fdsouvenir/ghcli@v1.0.3
 ```
 
 Build from a checkout:
@@ -179,7 +179,7 @@ KeePassXC.
 ## Release Notes
 
 Release notes are tracked in [CHANGELOG.md](CHANGELOG.md). The public notes for
-`v1.0.2` are in [docs/release-notes/v1.0.2.md](docs/release-notes/v1.0.2.md).
+`v1.0.3` are in [docs/release-notes/v1.0.3.md](docs/release-notes/v1.0.3.md).
 
 ## License
 
