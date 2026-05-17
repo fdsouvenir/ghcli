@@ -1,47 +1,81 @@
-# fbitcli
+# ghcli
 
-`fbitcli` is a local-first Google Health archive for Fitbit data. It uses the
-Google Health API only, stores normalized records in SQLite, and exposes local
-read-only query commands for agents and shell use.
+`ghcli` is a local-first Google Health CLI. It syncs authorized Google Health
+API data into a durable SQLite archive, keeps OAuth tokens in KeePassXC, and
+answers queries from local data by default.
 
-The legacy Fitbit Web API is intentionally not supported.
+`ghcli` is built for the Google Health API. It does not use the legacy Fitbit
+Web API.
 
 ## Status
 
-Early implementation. The Google Health API docs currently warn that breaking
-changes may occur until the end of May 2026, so Google Health wire handling is
-kept behind a small client/sync layer.
+Current release: `v1.0.0`
+
+This is the first stable public release. Google Health API availability still
+depends on the account, granted scopes, connected devices, and Google-side API
+behavior.
+
+## Features
+
+- Explicit OAuth setup using a local Google OAuth client file.
+- KeePassXC-backed token storage with refresh-token rotation.
+- Local SQLite archive under `$XDG_STATE_HOME/ghcli` or
+  `~/.local/state/ghcli`.
+- Read-only query commands for agents and shell workflows.
+- Incremental sync and historical backfill commands.
+- Systemd user timer templates for near-real-time polling within API limits.
+- Raw API payload archival is opt-in with `--archive-raw`; normalized rows are
+  stored by default.
+- OpenClaw skill wrapper for local, read-only health data questions.
 
 ## Install
 
-```sh
-go build -o fbitcli .
-```
-
-## Credentials
-
-Development credentials are read from `./ghapi-credentials.json` by default.
-You can override that with:
+Install a tagged release:
 
 ```sh
-export FBITCLI_GOOGLE_CREDENTIALS=/path/to/google-oauth-client.json
+go install github.com/fdsouvenir/ghcli@v1.0.0
 ```
+
+Build from a checkout:
+
+```sh
+go build -ldflags "-X github.com/fdsouvenir/ghcli/cmd.Version=$(git describe --tags --always --dirty)" -o ghcli .
+```
+
+## Google OAuth Setup
+
+Create an OAuth client for an installed application in Google Cloud, then save
+the downloaded JSON file as:
+
+```text
+./ghapi-credentials.json
+```
+
+You can override that path:
+
+```sh
+export GHCLI_GOOGLE_CREDENTIALS=/path/to/google-oauth-client.json
+```
+
+The credential file is secret material and must not be committed.
+
+## Token Storage
 
 OAuth tokens are stored as a KeePassXC attachment by default:
 
 ```text
-vault:Services/google-health-fbitcli/token.json
+vault:Services/google-health-ghcli/token.json
 ```
 
-The default vault paths match the existing OpenClaw vault convention:
+Default vault paths:
 
 ```text
 ~/.openclaw/passwords.kdbx
 ~/.openclaw/vault.key
 ```
 
-Override with `FBITCLI_VAULT_DB`, `FBITCLI_VAULT_KEY`,
-`FBITCLI_VAULT_ENTRY`, or `FBITCLI_VAULT_ATTACHMENT`.
+Override with `GHCLI_VAULT_DB`, `GHCLI_VAULT_KEY`, `GHCLI_VAULT_ENTRY`, or
+`GHCLI_VAULT_ATTACHMENT`.
 
 `auth setup` validates the local credential file and ensures the KeePassXC entry
 exists. `auth login` uses copy/paste OAuth by default. Use
@@ -51,35 +85,25 @@ with an explicit port, for example `http://localhost:8080`.
 ## Quick Start
 
 ```sh
-fbitcli auth setup
-fbitcli auth login
-fbitcli sync once
-fbitcli doctor
-fbitcli --json daily --since 2026-05-17
-fbitcli --json activity --limit 50
-fbitcli --json sleep --since 2026-05-01
+ghcli auth setup
+ghcli auth login
+ghcli sync once
+ghcli doctor
+ghcli --json daily --since 2026-05-17
+ghcli --json activity --limit 50
+ghcli --json sleep --since 2026-05-01
 ```
 
 Backfill a historical window:
 
 ```sh
-fbitcli sync backfill --since 2026-05-01 --until 2026-05-17 --rollups
-```
-
-Raw Google Health API response bodies are not stored by default. Add
-`--archive-raw` to `sync once` or `sync backfill` only when debugging an API
-shape or preserving an audit copy.
-
-Delete existing raw response bodies while keeping queryable rows:
-
-```sh
-fbitcli maintenance prune-raw --vacuum
+ghcli sync backfill --since 2026-05-01 --until 2026-05-17 --rollups
 ```
 
 Print systemd user unit templates:
 
 ```sh
-fbitcli sync install-systemd
+ghcli sync install-systemd
 ```
 
 ## Commands
@@ -97,15 +121,39 @@ remote API.
 
 ## Data Coverage
 
-The sync engine iterates the current Google Health data type table: steps,
-distance, floors, altitude, calories, active minutes, active zone minutes,
-activity level, sedentary periods, exercise, swim data, heart-rate zones, VO2
-max, heart rate, resting heart rate, HRV, SpO2, respiratory rate, sleep
-temperature derivations, height, weight, body fat, sleep, and hydration logs.
+`ghcli` asks for the current Google Health read scopes and syncs the data types
+the API exposes to the authorized account, including:
 
-Availability depends on the Google Health API, granted scopes, account state,
-and Fitbit device/app sync. Fitbit devices do not sync directly to this CLI;
-data becomes available after the Fitbit app syncs it to Google Health.
+- activity: steps, distance, floors, altitude, calories, active minutes, active
+  zone minutes, activity level, sedentary periods, exercise, swim data, and VO2
+  max
+- heart: heart rate, resting heart rate, heart-rate zones, and HRV
+- oxygen and breathing: SpO2 and respiratory rate
+- sleep: sleep records and sleep temperature derivations
+- body: height, weight, and body fat
+- nutrition: hydration logs
+- account context: profile, settings, and observed device/source details
+
+Availability depends on Google Health, the user's scopes, and whether connected
+apps or devices have synced data into Google Health.
+
+## Raw Payloads
+
+Raw Google Health API response bodies are not stored by default. Add
+`--archive-raw` to `sync once` or `sync backfill` only when debugging an API
+shape or preserving an audit copy.
+
+Delete existing raw response bodies while keeping queryable rows:
+
+```sh
+ghcli maintenance prune-raw --vacuum
+```
+
+## OpenClaw Skill
+
+The bundled skill is in `skills/google-health-local-archive`. It is designed for
+read-only local querying through `ghcli --json --read-only` and never calls the
+Google Health API directly.
 
 ## Tests
 
@@ -118,8 +166,17 @@ go test ./...
 Live API tests are gated:
 
 ```sh
-FBITCLI_LIVE_TESTS=1 go test ./internal/health -run Live
+GHCLI_LIVE_TESTS=1 go test ./internal/health -run Live
 ```
 
-Run live tests only after `fbitcli auth login` has stored a usable token in
+Run live tests only after `ghcli auth login` has stored a usable token in
 KeePassXC.
+
+## Release Notes
+
+Release notes are tracked in [CHANGELOG.md](CHANGELOG.md). The public notes for
+`v1.0.0` are in [docs/release-notes/v1.0.0.md](docs/release-notes/v1.0.0.md).
+
+## License
+
+MIT. See [LICENSE](LICENSE).
