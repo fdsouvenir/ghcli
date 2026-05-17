@@ -8,7 +8,7 @@ import (
 
 func TestOpenAppliesMigrations(t *testing.T) {
 	ctx := context.Background()
-	st, err := Open(ctx, filepath.Join(t.TempDir(), "fbitcli.db"))
+	st, err := Open(ctx, filepath.Join(t.TempDir(), "ghcli.db"))
 	if err != nil {
 		t.Fatal(err)
 	}

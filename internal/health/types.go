@@ -7,7 +7,7 @@ const (
 	ScopeBase = "https://www.googleapis.com/auth/googlehealth"
 )
 
-// ReadOnlyScopes is the full read-only Google Health scope set fbitcli asks
+// ReadOnlyScopes is the full read-only Google Health scope set ghcli asks
 // for. These are intentionally Google Health scopes only; legacy Fitbit Web
 // API scopes are not used anywhere in this repository.
 var ReadOnlyScopes = []string{
@@ -20,7 +20,7 @@ var ReadOnlyScopes = []string{
 	ScopeBase + ".sleep.readonly",
 }
 
-// DataType describes a Google Health data type fbitcli syncs.
+// DataType describes a Google Health data type ghcli syncs.
 type DataType struct {
 	Name                string
 	FilterName          string

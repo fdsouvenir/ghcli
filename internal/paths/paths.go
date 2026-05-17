@@ -1,4 +1,4 @@
-// Package paths resolves fbitcli's local state layout.
+// Package paths resolves ghcli's local state layout.
 package paths
 
 import (
@@ -15,7 +15,7 @@ type Layout struct {
 }
 
 // Resolve returns the layout rooted at storeOverride, otherwise at
-// $XDG_STATE_HOME/fbitcli or ~/.local/state/fbitcli.
+// $XDG_STATE_HOME/ghcli or ~/.local/state/ghcli.
 func Resolve(storeOverride string) (Layout, error) {
 	root := storeOverride
 	if root == "" {
@@ -31,7 +31,7 @@ func Resolve(storeOverride string) (Layout, error) {
 	}
 	return Layout{
 		Root:        abs,
-		Database:    filepath.Join(abs, "fbitcli.db"),
+		Database:    filepath.Join(abs, "ghcli.db"),
 		Credentials: defaultCredentialsPath(),
 	}, nil
 }
@@ -43,17 +43,17 @@ func (l Layout) EnsureDirs() error {
 
 func defaultRoot() (string, error) {
 	if xdg := os.Getenv("XDG_STATE_HOME"); xdg != "" {
-		return filepath.Join(xdg, "fbitcli"), nil
+		return filepath.Join(xdg, "ghcli"), nil
 	}
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", fmt.Errorf("determine home dir: %w", err)
 	}
-	return filepath.Join(home, ".local", "state", "fbitcli"), nil
+	return filepath.Join(home, ".local", "state", "ghcli"), nil
 }
 
 func defaultCredentialsPath() string {
-	if p := os.Getenv("FBITCLI_GOOGLE_CREDENTIALS"); p != "" {
+	if p := os.Getenv("GHCLI_GOOGLE_CREDENTIALS"); p != "" {
 		return p
 	}
 	if p := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"); p != "" {

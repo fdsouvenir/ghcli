@@ -8,8 +8,8 @@ import (
 )
 
 func TestLiveGetIdentity(t *testing.T) {
-	if os.Getenv("FBITCLI_LIVE_TESTS") != "1" {
-		t.Skip("set FBITCLI_LIVE_TESTS=1 after OAuth login to run live Google Health API tests")
+	if os.Getenv("GHCLI_LIVE_TESTS") != "1" {
+		t.Skip("set GHCLI_LIVE_TESTS=1 after OAuth login to run live Google Health API tests")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()

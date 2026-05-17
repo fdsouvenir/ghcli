@@ -8,8 +8,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/fdsouvenir/fbitcli/internal/output"
-	"github.com/fdsouvenir/fbitcli/internal/store"
+	"github.com/fdsouvenir/ghcli/internal/output"
+	"github.com/fdsouvenir/ghcli/internal/store"
 )
 
 func queryCmd(name, short string, dataTypes []string, rollups bool) *cobra.Command {

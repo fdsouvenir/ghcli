@@ -8,8 +8,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/fdsouvenir/fbitcli/internal/health"
-	"github.com/fdsouvenir/fbitcli/internal/output"
+	"github.com/fdsouvenir/ghcli/internal/health"
+	"github.com/fdsouvenir/ghcli/internal/output"
 )
 
 type doctorReport struct {
@@ -113,7 +113,7 @@ func runDoctor(ctx context.Context) doctorReport {
 
 func renderDoctor(cmd *cobra.Command, r doctorReport) {
 	w := cmd.OutOrStdout()
-	fmt.Fprintln(w, "fbitcli doctor")
+	fmt.Fprintln(w, "ghcli doctor")
 	fmt.Fprintln(w, "==============")
 	fmt.Fprintf(w, "  store root:       %s\n", r.StoreRoot)
 	fmt.Fprintf(w, "  database:         %s\n", r.Database)

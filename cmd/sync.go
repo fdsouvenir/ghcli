@@ -8,8 +8,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/fdsouvenir/fbitcli/internal/output"
-	fbitsync "github.com/fdsouvenir/fbitcli/internal/sync"
+	"github.com/fdsouvenir/ghcli/internal/output"
+	ghsync "github.com/fdsouvenir/ghcli/internal/sync"
 )
 
 func syncCmd() *cobra.Command {
@@ -44,7 +44,7 @@ func syncOnceCmd() *cobra.Command {
 				return err
 			}
 			defer st.Close()
-			if err := fbitsync.SyncAccount(ctx, api, st, archiveRaw); err != nil {
+			if err := ghsync.SyncAccount(ctx, api, st, archiveRaw); err != nil {
 				return err
 			}
 			since := time.Now().Add(-24 * time.Hour)
@@ -54,7 +54,7 @@ func syncOnceCmd() *cobra.Command {
 					return err
 				}
 			}
-			res, err := fbitsync.Run(ctx, api, st, fbitsync.Options{
+			res, err := ghsync.Run(ctx, api, st, ghsync.Options{
 				Since:      since,
 				Until:      time.Now(),
 				FastOnly:   fastOnly,
@@ -110,10 +110,10 @@ func syncBackfillCmd() *cobra.Command {
 				return err
 			}
 			defer st.Close()
-			if err := fbitsync.SyncAccount(ctx, api, st, archiveRaw); err != nil {
+			if err := ghsync.SyncAccount(ctx, api, st, archiveRaw); err != nil {
 				return err
 			}
-			res, err := fbitsync.Run(ctx, api, st, fbitsync.Options{
+			res, err := ghsync.Run(ctx, api, st, ghsync.Options{
 				Since:      since,
 				Until:      until,
 				FastOnly:   false,
@@ -143,14 +143,14 @@ func syncInstallSystemdCmd() *cobra.Command {
 		Short: "Print user systemd unit templates",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			fmt.Fprint(cmd.OutOrStdout(), `[Unit]
-Description=fbitcli Google Health sync
+Description=ghcli Google Health sync
 
 [Service]
 Type=oneshot
-ExecStart=fbitcli sync once --fast-only
+ExecStart=ghcli sync once --fast-only
 `)
 			fmt.Fprint(cmd.OutOrStdout(), `[Unit]
-Description=Run fbitcli Google Health sync every 15 minutes
+Description=Run ghcli Google Health sync every 15 minutes
 
 [Timer]
 OnBootSec=2m
@@ -165,7 +165,7 @@ WantedBy=timers.target
 	}
 }
 
-func renderSyncResult(cmd *cobra.Command, res fbitsync.Result) {
+func renderSyncResult(cmd *cobra.Command, res ghsync.Result) {
 	fmt.Fprintf(cmd.OutOrStdout(), "window: %s -> %s\n", res.WindowStart, res.WindowEnd)
 	for _, tr := range res.Types {
 		status := "ok"

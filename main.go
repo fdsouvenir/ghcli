@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/fdsouvenir/fbitcli/cmd"
+	"github.com/fdsouvenir/ghcli/cmd"
 )
 
 func main() {

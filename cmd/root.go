@@ -2,16 +2,15 @@ package cmd
 
 import (
 	"context"
-	"errors"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/spf13/cobra"
 
-	"github.com/fdsouvenir/fbitcli/internal/health"
-	"github.com/fdsouvenir/fbitcli/internal/paths"
-	"github.com/fdsouvenir/fbitcli/internal/store"
+	"github.com/fdsouvenir/ghcli/internal/health"
+	"github.com/fdsouvenir/ghcli/internal/paths"
+	"github.com/fdsouvenir/ghcli/internal/store"
 )
 
 type globalFlags struct {
@@ -30,13 +29,13 @@ var Version = "dev"
 // Root constructs the command tree.
 func Root() *cobra.Command {
 	root := &cobra.Command{
-		Use:           "fbitcli",
-		Short:         "Local-first Google Health archive for Fitbit data",
-		Long:          "fbitcli syncs Google Health API Fitbit data into a local SQLite archive and exposes read-only query commands.",
+		Use:           "ghcli",
+		Short:         "Local-first Google Health CLI and archive",
+		Long:          "ghcli syncs Google Health API data into a local SQLite archive and exposes read-only query commands.",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
-	root.PersistentFlags().StringVar(&flags.storeDir, "store", "", "state directory (default: $XDG_STATE_HOME/fbitcli or ~/.local/state/fbitcli)")
+	root.PersistentFlags().StringVar(&flags.storeDir, "store", "", "state directory (default: $XDG_STATE_HOME/ghcli or ~/.local/state/ghcli)")
 	root.PersistentFlags().BoolVar(&flags.jsonOut, "json", false, "emit JSON")
 	root.PersistentFlags().BoolVar(&flags.readOnly, "read-only", true, "agent safety flag; query commands are local/read-only")
 	root.PersistentFlags().BoolVar(&flags.full, "full", false, "disable table truncation")
@@ -114,8 +113,6 @@ func signalContext(parent context.Context) (context.Context, context.CancelFunc)
 	}()
 	return ctx, cancel
 }
-
-var errNoLegacyFitbit = errors.New("legacy Fitbit Web API is intentionally unsupported; use Google Health API only")
 
 func dailyDataTypes() []string {
 	return []string{

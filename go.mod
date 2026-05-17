@@ -1,4 +1,4 @@
-module github.com/fdsouvenir/fbitcli
+module github.com/fdsouvenir/ghcli
 
 go 1.26.2
 

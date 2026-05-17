@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	defaultVaultEntry      = "Services/google-health-fbitcli"
+	defaultVaultEntry      = "Services/google-health-ghcli"
 	defaultVaultAttachment = "token.json"
 )
 
@@ -108,19 +108,19 @@ type VaultTokenStore struct {
 // DefaultVaultTokenStore returns the OpenClaw-style KeePassXC token store.
 func DefaultVaultTokenStore() VaultTokenStore {
 	home, _ := os.UserHomeDir()
-	db := os.Getenv("FBITCLI_VAULT_DB")
+	db := os.Getenv("GHCLI_VAULT_DB")
 	if db == "" {
 		db = filepath.Join(home, ".openclaw", "passwords.kdbx")
 	}
-	key := os.Getenv("FBITCLI_VAULT_KEY")
+	key := os.Getenv("GHCLI_VAULT_KEY")
 	if key == "" {
 		key = filepath.Join(home, ".openclaw", "vault.key")
 	}
-	entry := os.Getenv("FBITCLI_VAULT_ENTRY")
+	entry := os.Getenv("GHCLI_VAULT_ENTRY")
 	if entry == "" {
 		entry = defaultVaultEntry
 	}
-	att := os.Getenv("FBITCLI_VAULT_ATTACHMENT")
+	att := os.Getenv("GHCLI_VAULT_ATTACHMENT")
 	if att == "" {
 		att = defaultVaultAttachment
 	}
@@ -134,7 +134,7 @@ func (v VaultTokenStore) Describe() string {
 
 // Load exports and parses the token attachment.
 func (v VaultTokenStore) Load(ctx context.Context) (*oauth2.Token, error) {
-	tmp, err := os.CreateTemp("", "fbitcli-token-*.json")
+	tmp, err := os.CreateTemp("", "ghcli-token-*.json")
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +175,7 @@ func (v VaultTokenStore) EnsureEntry(ctx context.Context) error {
 		"--generate", "--length", "32",
 		"--username", "google-health",
 		"--url", "https://health.googleapis.com/",
-		"--notes", "fbitcli Google Health OAuth token attachment; credential values live in ghapi-credentials.json",
+		"--notes", "ghcli Google Health OAuth token attachment; credential values live in ghapi-credentials.json",
 		v.DB, v.Entry,
 	)
 	out, err := exec.CommandContext(ctx, "keepassxc-cli", addArgs...).CombinedOutput()
@@ -195,7 +195,7 @@ func (v VaultTokenStore) Save(ctx context.Context, tok *oauth2.Token) error {
 		return err
 	}
 	b = append(b, '\n')
-	tmp, err := os.CreateTemp("", "fbitcli-token-*.json")
+	tmp, err := os.CreateTemp("", "ghcli-token-*.json")
 	if err != nil {
 		return err
 	}
@@ -338,7 +338,7 @@ func loopbackCode(ctx context.Context, conf *oauth2.Config, state string) (strin
 			errCh <- errors.New("OAuth redirect missing code")
 			return
 		}
-		fmt.Fprintln(w, "OK. You can close this tab and return to fbitcli.")
+		fmt.Fprintln(w, "OK. You can close this tab and return to ghcli.")
 		codeCh <- c
 	})
 	go func() {

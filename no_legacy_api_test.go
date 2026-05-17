@@ -24,7 +24,7 @@ func TestNoLegacyFitbitWebAPIHosts(t *testing.T) {
 			}
 			return nil
 		}
-		if filepath.Base(path) == "no_legacy_fitbit_test.go" {
+		if filepath.Base(path) == "no_legacy_api_test.go" {
 			return nil
 		}
 		if strings.HasSuffix(path, ".sum") || strings.HasSuffix(path, "ghapi-credentials.json") {

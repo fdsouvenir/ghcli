@@ -7,7 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/fdsouvenir/fbitcli/internal/output"
+	"github.com/fdsouvenir/ghcli/internal/output"
 )
 
 func maintenanceCmd() *cobra.Command {

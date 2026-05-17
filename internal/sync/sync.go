@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/fdsouvenir/fbitcli/internal/health"
-	"github.com/fdsouvenir/fbitcli/internal/store"
+	"github.com/fdsouvenir/ghcli/internal/health"
+	"github.com/fdsouvenir/ghcli/internal/store"
 )
 
 // Options controls a sync pass.
