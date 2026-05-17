@@ -37,7 +37,7 @@ func TestNoLegacyFitbitWebAPIHosts(t *testing.T) {
 		text := string(b)
 		for _, bad := range forbidden {
 			if strings.Contains(text, bad) {
-				t.Fatalf("%s contains forbidden legacy Fitbit Web API reference %q", path, bad)
+				t.Fatalf("%s contains forbidden older Fitbit API host reference %q", path, bad)
 			}
 		}
 		return nil

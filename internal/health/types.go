@@ -8,8 +8,7 @@ const (
 )
 
 // ReadOnlyScopes is the full read-only Google Health scope set ghcli asks
-// for. These are intentionally Google Health scopes only; legacy Fitbit Web
-// API scopes are not used anywhere in this repository.
+// for. These are intentionally Google Health scopes only.
 var ReadOnlyScopes = []string{
 	ScopeBase + ".activity_and_fitness.readonly",
 	ScopeBase + ".health_metrics_and_measurements.readonly",

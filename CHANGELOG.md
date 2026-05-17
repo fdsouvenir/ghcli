@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.0.4 - 2026-05-17
+
+### Changed
+
+- Updated public positioning to `Google Health (Fitbit) Local Archive`.
+- Clarified that `ghcli` uses the Google Health API for the same underlying
+  health history and archives Google Health API data for Fitbit/Google health
+  accounts.
+- Removed public wording that implies a separate Fitbit-to-Google-Health data
+  movement path or refers to the older Fitbit API surface.
+- Updated bundled skill install metadata to
+  `github.com/fdsouvenir/ghcli@v1.0.4`.
+
 ## v1.0.3 - 2026-05-17
 
 ### Changed
@@ -61,7 +74,6 @@ Initial stable public release.
 
 ### Notes
 
-- `ghcli` targets the Google Health API only. The legacy Fitbit Web API is
-  intentionally unsupported.
+- `ghcli` uses the Google Health API for the same underlying health history.
 - Default tests avoid invented API fixtures; live API tests are opt-in with
   `GHCLI_LIVE_TESTS=1`.

@@ -24,7 +24,7 @@ type globalFlags struct {
 var flags globalFlags
 
 // Version is the tagged module version. Release builds may override it.
-var Version = "v1.0.3"
+var Version = "v1.0.4"
 
 // Root constructs the command tree.
 func Root() *cobra.Command {

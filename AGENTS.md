@@ -1,6 +1,6 @@
 # ghcli Agent Notes
 
-- This repository targets Google Health API only. Do not add legacy Fitbit Web
+- This repository targets the Google Health API only. Do not add older Fitbit
   API hosts, OAuth flows, scopes, or clients.
 - `ghapi-credentials.json` is local secret material. Do not print, copy, or
   commit its values anywhere else.

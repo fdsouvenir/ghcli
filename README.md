@@ -1,15 +1,14 @@
 # ghcli
 
-`ghcli` is a local-first Google Health CLI. It syncs authorized Google Health
-API data into a durable SQLite archive, keeps OAuth tokens in KeePassXC, and
-answers queries from local data by default.
+`ghcli` is a local-first Google Health (Fitbit) CLI and archive. It syncs
+authorized Google Health API data into a durable SQLite archive, keeps OAuth
+tokens in KeePassXC, and answers queries from local data by default.
 
-`ghcli` is built for the Google Health API. It does not use the legacy Fitbit
-Web API.
+`ghcli` uses the Google Health API for the same underlying health history.
 
 ## Status
 
-Current release: `v1.0.3`
+Current release: `v1.0.4`
 
 This is the first stable public release. Google Health API availability still
 depends on the account, granted scopes, connected devices, and Google-side API
@@ -33,7 +32,7 @@ behavior.
 Install a tagged release:
 
 ```sh
-go install github.com/fdsouvenir/ghcli@v1.0.3
+go install github.com/fdsouvenir/ghcli@v1.0.4
 ```
 
 Build from a checkout:
@@ -134,8 +133,8 @@ the API exposes to the authorized account, including:
 - nutrition: hydration logs
 - account context: profile, settings, and observed device/source details
 
-Availability depends on Google Health, the user's scopes, and whether connected
-apps or devices have synced data into Google Health.
+Availability depends on Google Health API access, the user's scopes, account
+state, and device/app data availability.
 
 ## Raw Payloads
 
@@ -158,6 +157,8 @@ Google Health API directly.
 The skill declares `ghcli` as a required binary for ClawHub/OpenClaw load-time
 checks. Fresh installs should install the CLI first, then run `ghcli auth setup`,
 `ghcli auth login`, and `ghcli sync once` before asking health-data questions.
+Inside the skill, missing credentials, tokens, or synced data are handled with
+read-only diagnostics and explicit next-step instructions.
 
 ## Tests
 
@@ -179,7 +180,7 @@ KeePassXC.
 ## Release Notes
 
 Release notes are tracked in [CHANGELOG.md](CHANGELOG.md). The public notes for
-`v1.0.3` are in [docs/release-notes/v1.0.3.md](docs/release-notes/v1.0.3.md).
+`v1.0.4` are in [docs/release-notes/v1.0.4.md](docs/release-notes/v1.0.4.md).
 
 ## License
 

@@ -1,34 +1,27 @@
 ---
 name: google-health-local-archive
-description: Read a local ghcli Google Health archive for activity, sleep, heart, body, and wellness metric questions. Uses read-only local JSON queries and never calls Google Health directly.
-version: 1.0.3
+description: Read a local ghcli archive of Google Health API data for Fitbit/Google health accounts. Uses read-only local JSON queries and never calls Google Health directly.
+version: 1.0.4
 homepage: https://github.com/fdsouvenir/ghcli
-metadata: { "openclaw": { "requires": { "bins": ["ghcli"] }, "install": [{ "id": "go-install", "kind": "go", "module": "github.com/fdsouvenir/ghcli@v1.0.3", "bins": ["ghcli"], "label": "Install ghcli with Go" }] } }
+metadata: { "openclaw": { "requires": { "bins": ["ghcli"] }, "install": [{ "id": "go-install", "kind": "go", "module": "github.com/fdsouvenir/ghcli@v1.0.4", "bins": ["ghcli"], "label": "Install ghcli with Go" }] } }
 ---
 
-# Google Health Local Archive
+# Google Health (Fitbit) Local Archive
 
 Use this skill when the user asks questions about health, activity, sleep,
-heart, body, or device/source data that has been synced locally with `ghcli`.
+heart, body, or device/source data archived locally with `ghcli` from the
+Google Health API, including Fitbit-era health history.
 
-`ghcli` uses the Google Health API only. The legacy Fitbit Web API is not part
-of this workflow.
+`ghcli` uses the Google Health API for the same underlying health history.
 
-## Fresh Install Check
+## Readiness Check
 
-If `ghcli` is not available or a query fails because the archive is not ready,
-run only these local diagnostics:
+This skill assumes `ghcli` is already installed. If a query fails because the
+local archive is not ready, run only these diagnostics:
 
 ```bash
-command -v ghcli
 ghcli --json --read-only auth status
 ghcli --json --read-only doctor
-```
-
-If `command -v ghcli` fails, tell the user to install the CLI:
-
-```bash
-go install github.com/fdsouvenir/ghcli@v1.0.3
 ```
 
 If credentials, token, or archive data are missing, tell the user the exact next
@@ -82,7 +75,7 @@ ghcli --json --read-only devices
 Only run these commands after the user explicitly asks for setup, login, sync,
 or export:
 
-- `ghcli auth ...`
+- `ghcli auth ...`, except `ghcli --json --read-only auth status`
 - `ghcli sync ...`
 - `ghcli export` unless the user explicitly asks for export
 - any future non-query command
