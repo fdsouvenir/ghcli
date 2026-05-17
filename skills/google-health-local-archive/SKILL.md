@@ -1,9 +1,9 @@
 ---
 name: google-health-local-archive
 description: Read a local ghcli Google Health archive for activity, sleep, heart, body, and wellness metric questions. Uses read-only local JSON queries and never calls Google Health directly.
-version: 1.0.1
+version: 1.0.2
 homepage: https://github.com/fdsouvenir/ghcli
-metadata: { "openclaw": { "install": [{ "id": "go-install", "kind": "go", "module": "github.com/fdsouvenir/ghcli@v1.0.1", "bins": ["ghcli"], "label": "Install ghcli with Go" }] } }
+metadata: { "openclaw": { "requires": { "bins": ["ghcli"] }, "install": [{ "id": "go-install", "kind": "go", "module": "github.com/fdsouvenir/ghcli@v1.0.2", "bins": ["ghcli"], "label": "Install ghcli with Go" }] } }
 ---
 
 # Google Health Local Archive
@@ -28,7 +28,7 @@ ghcli --json --read-only doctor
 If `command -v ghcli` fails, tell the user to install the CLI:
 
 ```bash
-go install github.com/fdsouvenir/ghcli@v1.0.1
+go install github.com/fdsouvenir/ghcli@v1.0.2
 ```
 
 If credentials, token, or archive data are missing, tell the user the exact next

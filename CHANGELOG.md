@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.0.2 - 2026-05-17
+
+### Changed
+
+- Restored `metadata.openclaw.requires.bins: ["ghcli"]` in the bundled skill so
+  ClawHub security analysis and runtime metadata match the skill's actual CLI
+  usage.
+- Updated install metadata and docs to point at
+  `github.com/fdsouvenir/ghcli@v1.0.2`.
+- Moved fresh-install expectations into README/release notes: install `ghcli`
+  first, then authenticate and sync before asking archive questions.
+
 ## v1.0.1 - 2026-05-17
 
 ### Changed
