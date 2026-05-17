@@ -1,0 +1,5 @@
+fbitcli
+*.db
+*.db-shm
+*.db-wal
+ghapi-credentials.json
