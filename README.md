@@ -9,7 +9,7 @@ Web API.
 
 ## Status
 
-Current release: `v1.0.0`
+Current release: `v1.0.1`
 
 This is the first stable public release. Google Health API availability still
 depends on the account, granted scopes, connected devices, and Google-side API
@@ -33,7 +33,7 @@ behavior.
 Install a tagged release:
 
 ```sh
-go install github.com/fdsouvenir/ghcli@v1.0.0
+go install github.com/fdsouvenir/ghcli@v1.0.1
 ```
 
 Build from a checkout:
@@ -155,6 +155,14 @@ The bundled skill is in `skills/google-health-local-archive`. It is designed for
 read-only local querying through `ghcli --json --read-only` and never calls the
 Google Health API directly.
 
+For a fresh ClawHub install, the skill first checks whether `ghcli` is installed
+and whether the local archive is ready. If the binary, OAuth token, credentials,
+or synced data are missing, it reports the next local setup command instead of
+silently calling remote APIs.
+
+The skill intentionally does not hard-gate itself on `requires.bins`, because a
+missing `ghcli` binary is part of the onboarding flow it needs to explain.
+
 ## Tests
 
 Default tests do not use invented API payloads.
@@ -175,7 +183,7 @@ KeePassXC.
 ## Release Notes
 
 Release notes are tracked in [CHANGELOG.md](CHANGELOG.md). The public notes for
-`v1.0.0` are in [docs/release-notes/v1.0.0.md](docs/release-notes/v1.0.0.md).
+`v1.0.1` are in [docs/release-notes/v1.0.1.md](docs/release-notes/v1.0.1.md).
 
 ## License
 

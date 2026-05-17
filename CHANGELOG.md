@@ -1,5 +1,20 @@
 # Changelog
 
+## v1.0.1 - 2026-05-17
+
+### Changed
+
+- Updated the bundled OpenClaw skill frontmatter to use single-line JSON
+  metadata for ClawHub compatibility.
+- Changed the skill installer metadata to install
+  `github.com/fdsouvenir/ghcli@v1.0.1`.
+- Removed the hard `requires.bins` gate so the skill can still explain how to
+  install `ghcli` when the binary is missing.
+- Added fresh-install diagnostics for missing `ghcli`, missing OAuth state,
+  stale archives, and empty archives.
+- Clarified that setup, login, sync, and export commands require explicit user
+  intent, while normal health questions stay local and read-only.
+
 ## v1.0.0 - 2026-05-17
 
 Initial stable public release.
