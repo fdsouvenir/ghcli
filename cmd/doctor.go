@@ -13,24 +13,26 @@ import (
 )
 
 type doctorReport struct {
-	StoreRoot       string   `json:"store_root"`
-	Database        string   `json:"database"`
-	CredentialsPath string   `json:"credentials_path"`
-	CredentialsOK   bool     `json:"credentials_ok"`
-	TokenStore      string   `json:"token_store"`
-	TokenPresent    bool     `json:"token_present"`
-	TokenExpiry     string   `json:"token_expiry,omitempty"`
-	StoreOpens      bool     `json:"store_opens"`
-	SchemaVersion   int      `json:"schema_version,omitempty"`
-	HealthUserID    string   `json:"health_user_id,omitempty"`
-	LegacyUserID    string   `json:"legacy_user_id,omitempty"`
-	RawPayloads     int      `json:"raw_payloads,omitempty"`
-	DataPoints      int      `json:"data_points,omitempty"`
-	RollupPoints    int      `json:"rollup_points,omitempty"`
-	LastSuccess     string   `json:"last_success,omitempty"`
-	LastRawPayload  string   `json:"last_raw_payload,omitempty"`
-	LastDataPoint   string   `json:"last_data_point,omitempty"`
-	Issues          []string `json:"issues,omitempty"`
+	StoreRoot             string   `json:"store_root"`
+	Database              string   `json:"database"`
+	CredentialsSourceType string   `json:"credentials_source_type"`
+	CredentialsSource     string   `json:"credentials_source"`
+	CredentialsOK         bool     `json:"credentials_ok"`
+	TokenStore            string   `json:"token_store"`
+	TokenStoreType        string   `json:"token_store_type"`
+	TokenPresent          bool     `json:"token_present"`
+	TokenExpiry           string   `json:"token_expiry,omitempty"`
+	StoreOpens            bool     `json:"store_opens"`
+	SchemaVersion         int      `json:"schema_version,omitempty"`
+	HealthUserID          string   `json:"health_user_id,omitempty"`
+	LegacyUserID          string   `json:"legacy_user_id,omitempty"`
+	RawPayloads           int      `json:"raw_payloads,omitempty"`
+	DataPoints            int      `json:"data_points,omitempty"`
+	RollupPoints          int      `json:"rollup_points,omitempty"`
+	LastSuccess           string   `json:"last_success,omitempty"`
+	LastRawPayload        string   `json:"last_raw_payload,omitempty"`
+	LastDataPoint         string   `json:"last_data_point,omitempty"`
+	Issues                []string `json:"issues,omitempty"`
 }
 
 func doctorCmd() *cobra.Command {
@@ -62,14 +64,19 @@ func runDoctor(ctx context.Context) doctorReport {
 	}
 	r.StoreRoot = layout.Root
 	r.Database = layout.Database
-	r.CredentialsPath = layout.Credentials
-	r.TokenStore = health.DefaultVaultTokenStore().Describe()
-	if _, err := health.LoadCredentials(layout.Credentials); err != nil {
+	store := tokenStore(layout)
+	r.TokenStore = store.Describe()
+	r.TokenStoreType = "file"
+	if res, err := health.LoadCredentialSource(flags.credentials); err != nil {
+		r.CredentialsSourceType = res.Source.Type
+		r.CredentialsSource = res.Source.Label
 		r.Issues = append(r.Issues, err.Error())
 	} else {
+		r.CredentialsSourceType = res.Source.Type
+		r.CredentialsSource = res.Source.Label
 		r.CredentialsOK = true
 	}
-	if tok, err := health.DefaultVaultTokenStore().Load(ctx); err != nil {
+	if tok, err := store.Load(ctx); err != nil {
 		r.Issues = append(r.Issues, "token: "+err.Error())
 	} else {
 		r.TokenPresent = true
@@ -117,7 +124,7 @@ func renderDoctor(cmd *cobra.Command, r doctorReport) {
 	fmt.Fprintln(w, "==============")
 	fmt.Fprintf(w, "  store root:       %s\n", r.StoreRoot)
 	fmt.Fprintf(w, "  database:         %s\n", r.Database)
-	fmt.Fprintf(w, "  credentials:      %s ok=%v\n", r.CredentialsPath, r.CredentialsOK)
+	fmt.Fprintf(w, "  credentials:      %s %s ok=%v\n", r.CredentialsSourceType, r.CredentialsSource, r.CredentialsOK)
 	fmt.Fprintf(w, "  token store:      %s present=%v\n", r.TokenStore, r.TokenPresent)
 	if r.TokenExpiry != "" {
 		fmt.Fprintf(w, "  token expiry:     %s\n", r.TokenExpiry)

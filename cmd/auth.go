@@ -33,29 +33,31 @@ func authSetupCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			creds, err := health.LoadCredentials(layout.Credentials)
+			res, err := health.LoadCredentialSource(flags.credentials)
 			if err != nil {
 				return err
 			}
 			ctx, cancel := signalContext(context.Background())
 			defer cancel()
-			if err := health.DefaultVaultTokenStore().EnsureEntry(ctx); err != nil {
+			store := tokenStore(layout)
+			if err := store.EnsureReady(ctx); err != nil {
 				return err
 			}
 			report := map[string]any{
-				"credentials_path": layout.Credentials,
-				"project_id":       creds.Installed.ProjectID,
-				"redirect_uri":     creds.DefaultRedirectURI(),
-				"scopes":           health.ReadOnlyScopes,
-				"token_store":      health.DefaultVaultTokenStore().Describe(),
+				"credentials_source_type": res.Source.Type,
+				"credentials_source":      res.Source.Label,
+				"project_id":              res.Credentials.Installed.ProjectID,
+				"redirect_uri":            res.Credentials.DefaultRedirectURI(),
+				"scopes":                  health.ReadOnlyScopes,
+				"token_store":             store.Describe(),
 			}
 			if flags.jsonOut {
 				return output.JSON(cmd.OutOrStdout(), report)
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "credentials: %s\n", layout.Credentials)
-			fmt.Fprintf(cmd.OutOrStdout(), "project:     %s\n", creds.Installed.ProjectID)
-			fmt.Fprintf(cmd.OutOrStdout(), "redirect:    %s\n", creds.DefaultRedirectURI())
-			fmt.Fprintf(cmd.OutOrStdout(), "token store: %s\n", health.DefaultVaultTokenStore().Describe())
+			fmt.Fprintf(cmd.OutOrStdout(), "credentials: %s %s\n", res.Source.Type, res.Source.Label)
+			fmt.Fprintf(cmd.OutOrStdout(), "project:     %s\n", res.Credentials.Installed.ProjectID)
+			fmt.Fprintf(cmd.OutOrStdout(), "redirect:    %s\n", res.Credentials.DefaultRedirectURI())
+			fmt.Fprintf(cmd.OutOrStdout(), "token store: %s\n", store.Describe())
 			return nil
 		},
 	}
@@ -65,7 +67,7 @@ func authLoginCmd() *cobra.Command {
 	var loopback bool
 	c := &cobra.Command{
 		Use:   "login",
-		Short: "Run Google OAuth login and save token to KeePassXC",
+		Short: "Run Google OAuth login and save token locally",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx, cancel := signalContext(context.Background())
 			defer cancel()
@@ -73,11 +75,11 @@ func authLoginCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			creds, err := health.LoadCredentials(layout.Credentials)
+			res, err := health.LoadCredentialSource(flags.credentials)
 			if err != nil {
 				return err
 			}
-			return health.AuthCodeFlow(ctx, creds.Config(""), health.DefaultVaultTokenStore(), loopback)
+			return health.AuthCodeFlow(ctx, res.Credentials.Config(""), tokenStore(layout), loopback)
 		},
 	}
 	c.Flags().BoolVar(&loopback, "loopback", false, "listen on the configured loopback redirect URI")
@@ -91,7 +93,11 @@ func authStatusCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx, cancel := signalContext(context.Background())
 			defer cancel()
-			store := health.DefaultVaultTokenStore()
+			layout, err := resolveLayout()
+			if err != nil {
+				return err
+			}
+			store := tokenStore(layout)
 			tok, err := store.Load(ctx)
 			report := map[string]any{
 				"token_store": store.Describe(),
@@ -125,9 +131,19 @@ func authStatusCmd() *cobra.Command {
 func authRevokeLocalCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "revoke-local",
-		Short: "Explain how to remove local token state",
+		Short: "Remove local token state",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Fprintf(os.Stderr, "Remove the %s attachment from KeePassXC to clear local token state.\n", health.DefaultVaultTokenStore().Describe())
+			ctx, cancel := signalContext(context.Background())
+			defer cancel()
+			layout, err := resolveLayout()
+			if err != nil {
+				return err
+			}
+			store := tokenStore(layout)
+			if err := store.Delete(ctx); err != nil {
+				return err
+			}
+			fmt.Fprintf(os.Stderr, "Removed local token state from %s.\n", store.Describe())
 			return nil
 		},
 	}

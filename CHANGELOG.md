@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.0.5 - 2026-05-19
+
+### Changed
+
+- Removed the KeePassXC token-store requirement. OAuth tokens now persist in a
+  private local file under ghcli state.
+- Added `--credentials` and `GHCLI_GOOGLE_CREDENTIALS_JSON` for explicit Google
+  OAuth client credential input.
+- Removed implicit repo-local `ghapi-credentials.json` discovery from normal
+  credential resolution.
+- Updated the bundled OpenClaw skill to declare
+  `GHCLI_GOOGLE_CREDENTIALS_JSON` as its primary env input for SecretRef-backed
+  client JSON injection.
+- Updated bundled skill install metadata to
+  `github.com/fdsouvenir/ghcli@v1.0.5`.
+
 ## v1.0.4 - 2026-05-17
 
 ### Changed

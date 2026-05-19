@@ -9,9 +9,9 @@ import (
 
 // Layout is the canonical file layout under a single state directory.
 type Layout struct {
-	Root        string
-	Database    string
-	Credentials string
+	Root     string
+	Database string
+	Token    string
 }
 
 // Resolve returns the layout rooted at storeOverride, otherwise at
@@ -30,9 +30,9 @@ func Resolve(storeOverride string) (Layout, error) {
 		return Layout{}, fmt.Errorf("resolve store path: %w", err)
 	}
 	return Layout{
-		Root:        abs,
-		Database:    filepath.Join(abs, "ghcli.db"),
-		Credentials: defaultCredentialsPath(),
+		Root:     abs,
+		Database: filepath.Join(abs, "ghcli.db"),
+		Token:    filepath.Join(abs, "token.json"),
 	}, nil
 }
 
@@ -50,17 +50,4 @@ func defaultRoot() (string, error) {
 		return "", fmt.Errorf("determine home dir: %w", err)
 	}
 	return filepath.Join(home, ".local", "state", "ghcli"), nil
-}
-
-func defaultCredentialsPath() string {
-	if p := os.Getenv("GHCLI_GOOGLE_CREDENTIALS"); p != "" {
-		return p
-	}
-	if p := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"); p != "" {
-		return p
-	}
-	if _, err := os.Stat("ghapi-credentials.json"); err == nil {
-		return "ghapi-credentials.json"
-	}
-	return "ghapi-credentials.json"
 }

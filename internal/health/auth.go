@@ -11,17 +11,11 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"golang.org/x/oauth2"
-)
-
-const (
-	defaultVaultEntry      = "Services/google-health-ghcli"
-	defaultVaultAttachment = "token.json"
 )
 
 // OAuthCredentials is the installed-app Google OAuth client JSON shape.
@@ -37,18 +31,66 @@ type OAuthCredentials struct {
 	} `json:"installed"`
 }
 
-// LoadCredentials reads Google OAuth installed-app credentials.
+// CredentialSource describes where credentials were loaded from without
+// including secret material.
+type CredentialSource struct {
+	Type  string `json:"type"`
+	Label string `json:"label"`
+}
+
+// CredentialLoadResult includes parsed credentials and a non-secret source.
+type CredentialLoadResult struct {
+	Credentials OAuthCredentials
+	Source      CredentialSource
+}
+
+// LoadCredentials reads Google OAuth installed-app credentials from a file.
 func LoadCredentials(path string) (OAuthCredentials, error) {
-	var creds OAuthCredentials
 	b, err := os.ReadFile(path)
 	if err != nil {
-		return creds, fmt.Errorf("read credentials %s: %w", path, err)
+		return OAuthCredentials{}, fmt.Errorf("read credentials %s: %w", path, err)
 	}
+	return ParseCredentials(b, path)
+}
+
+// LoadCredentialSource resolves credentials from an explicit file path, the
+// GHCLI_GOOGLE_CREDENTIALS file path env var, or inline
+// GHCLI_GOOGLE_CREDENTIALS_JSON.
+func LoadCredentialSource(pathOverride string) (CredentialLoadResult, error) {
+	if pathOverride != "" {
+		creds, err := LoadCredentials(pathOverride)
+		return CredentialLoadResult{
+			Credentials: creds,
+			Source:      CredentialSource{Type: "file", Label: pathOverride},
+		}, err
+	}
+	if path := os.Getenv("GHCLI_GOOGLE_CREDENTIALS"); path != "" {
+		creds, err := LoadCredentials(path)
+		return CredentialLoadResult{
+			Credentials: creds,
+			Source:      CredentialSource{Type: "file", Label: "GHCLI_GOOGLE_CREDENTIALS"},
+		}, err
+	}
+	if raw := os.Getenv("GHCLI_GOOGLE_CREDENTIALS_JSON"); raw != "" {
+		creds, err := ParseCredentials([]byte(raw), "GHCLI_GOOGLE_CREDENTIALS_JSON")
+		return CredentialLoadResult{
+			Credentials: creds,
+			Source:      CredentialSource{Type: "inline_json", Label: "GHCLI_GOOGLE_CREDENTIALS_JSON"},
+		}, err
+	}
+	return CredentialLoadResult{
+		Source: CredentialSource{Type: "missing", Label: "unset"},
+	}, errors.New("missing Google OAuth credentials; set --credentials, GHCLI_GOOGLE_CREDENTIALS, or GHCLI_GOOGLE_CREDENTIALS_JSON")
+}
+
+// ParseCredentials parses Google OAuth installed-app credentials.
+func ParseCredentials(b []byte, label string) (OAuthCredentials, error) {
+	var creds OAuthCredentials
 	if err := json.Unmarshal(b, &creds); err != nil {
-		return creds, fmt.Errorf("parse credentials %s: %w", path, err)
+		return creds, fmt.Errorf("parse credentials from %s: %w", label, err)
 	}
 	if creds.Installed.ClientID == "" || creds.Installed.ClientSecret == "" {
-		return creds, fmt.Errorf("credentials %s missing installed.client_id/client_secret", path)
+		return creds, fmt.Errorf("credentials from %s missing installed.client_id/client_secret", label)
 	}
 	if creds.Installed.AuthURI == "" {
 		creds.Installed.AuthURI = "https://accounts.google.com/o/oauth2/v2/auth"
@@ -97,97 +139,61 @@ type TokenStore interface {
 	Describe() string
 }
 
-// VaultTokenStore stores the token as a KeePassXC attachment.
-type VaultTokenStore struct {
-	DB         string
-	KeyFile    string
-	Entry      string
-	Attachment string
+// FileTokenStore stores OAuth tokens in a private JSON file.
+type FileTokenStore struct {
+	Path string
 }
 
-// DefaultVaultTokenStore returns the OpenClaw-style KeePassXC token store.
-func DefaultVaultTokenStore() VaultTokenStore {
-	home, _ := os.UserHomeDir()
-	db := os.Getenv("GHCLI_VAULT_DB")
-	if db == "" {
-		db = filepath.Join(home, ".openclaw", "passwords.kdbx")
-	}
-	key := os.Getenv("GHCLI_VAULT_KEY")
-	if key == "" {
-		key = filepath.Join(home, ".openclaw", "vault.key")
-	}
-	entry := os.Getenv("GHCLI_VAULT_ENTRY")
-	if entry == "" {
-		entry = defaultVaultEntry
-	}
-	att := os.Getenv("GHCLI_VAULT_ATTACHMENT")
-	if att == "" {
-		att = defaultVaultAttachment
-	}
-	return VaultTokenStore{DB: db, KeyFile: key, Entry: entry, Attachment: att}
+// Describe returns a non-secret token location.
+func (f FileTokenStore) Describe() string {
+	return "file:" + f.Path
 }
 
-// Describe returns a non-secret location string.
-func (v VaultTokenStore) Describe() string {
-	return fmt.Sprintf("vault:%s/%s", v.Entry, v.Attachment)
-}
-
-// Load exports and parses the token attachment.
-func (v VaultTokenStore) Load(ctx context.Context) (*oauth2.Token, error) {
-	tmp, err := os.CreateTemp("", "ghcli-token-*.json")
+// EnsureReady creates the token directory with private permissions.
+func (f FileTokenStore) EnsureReady(context.Context) error {
+	dir := filepath.Dir(f.Path)
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return err
+	}
+	tmp, err := os.CreateTemp(dir, ".token-check-*.tmp")
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("check token store %s: %w", f.Describe(), err)
 	}
 	tmpPath := tmp.Name()
-	_ = tmp.Close()
-	defer os.Remove(tmpPath)
-
-	args := append([]string{"attachment-export"}, v.authArgs()...)
-	args = append(args, v.DB, v.Entry, v.Attachment, tmpPath)
-	cmd := exec.CommandContext(ctx, "keepassxc-cli", args...)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return nil, fmt.Errorf("load token from %s: %w: %s", v.Describe(), err, strings.TrimSpace(string(out)))
+	if err := tmp.Chmod(0o600); err != nil {
+		_ = tmp.Close()
+		_ = os.Remove(tmpPath)
+		return err
 	}
-	b, err := os.ReadFile(tmpPath)
+	if err := tmp.Close(); err != nil {
+		_ = os.Remove(tmpPath)
+		return err
+	}
+	return os.Remove(tmpPath)
+}
+
+// Load reads and parses a token file.
+func (f FileTokenStore) Load(context.Context) (*oauth2.Token, error) {
+	b, err := os.ReadFile(f.Path)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, fmt.Errorf("token not found at %s", f.Describe())
+		}
+		return nil, fmt.Errorf("read token from %s: %w", f.Describe(), err)
 	}
 	var tok oauth2.Token
 	if err := json.Unmarshal(b, &tok); err != nil {
-		return nil, fmt.Errorf("parse token from %s: %w", v.Describe(), err)
+		return nil, fmt.Errorf("parse token from %s: %w", f.Describe(), err)
 	}
 	if tok.AccessToken == "" && tok.RefreshToken == "" {
-		return nil, fmt.Errorf("token in %s has no access_token or refresh_token", v.Describe())
+		return nil, fmt.Errorf("token in %s has no access_token or refresh_token", f.Describe())
 	}
 	return &tok, nil
 }
 
-// EnsureEntry creates the KeePassXC entry if it does not already exist.
-func (v VaultTokenStore) EnsureEntry(ctx context.Context) error {
-	showArgs := append([]string{"show"}, v.authArgs()...)
-	showArgs = append(showArgs, v.DB, v.Entry)
-	if err := exec.CommandContext(ctx, "keepassxc-cli", showArgs...).Run(); err == nil {
-		return nil
-	}
-	addArgs := append([]string{"add"}, v.authArgs()...)
-	addArgs = append(addArgs,
-		"--generate", "--length", "32",
-		"--username", "google-health",
-		"--url", "https://health.googleapis.com/",
-		"--notes", "ghcli Google Health OAuth token attachment; credential values live in ghapi-credentials.json",
-		v.DB, v.Entry,
-	)
-	out, err := exec.CommandContext(ctx, "keepassxc-cli", addArgs...).CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("ensure vault entry %s: %w: %s", v.Entry, err, strings.TrimSpace(string(out)))
-	}
-	return nil
-}
-
-// Save imports the token attachment, replacing any existing attachment.
-func (v VaultTokenStore) Save(ctx context.Context, tok *oauth2.Token) error {
-	if err := v.EnsureEntry(ctx); err != nil {
+// Save writes a token file atomically with private permissions.
+func (f FileTokenStore) Save(ctx context.Context, tok *oauth2.Token) error {
+	if err := f.EnsureReady(ctx); err != nil {
 		return err
 	}
 	b, err := json.MarshalIndent(tok, "", "  ")
@@ -195,12 +201,16 @@ func (v VaultTokenStore) Save(ctx context.Context, tok *oauth2.Token) error {
 		return err
 	}
 	b = append(b, '\n')
-	tmp, err := os.CreateTemp("", "ghcli-token-*.json")
+	tmp, err := os.CreateTemp(filepath.Dir(f.Path), ".token-*.json")
 	if err != nil {
 		return err
 	}
 	tmpPath := tmp.Name()
 	defer os.Remove(tmpPath)
+	if err := tmp.Chmod(0o600); err != nil {
+		_ = tmp.Close()
+		return err
+	}
 	if _, err := tmp.Write(b); err != nil {
 		_ = tmp.Close()
 		return err
@@ -208,19 +218,18 @@ func (v VaultTokenStore) Save(ctx context.Context, tok *oauth2.Token) error {
 	if err := tmp.Close(); err != nil {
 		return err
 	}
-
-	args := append([]string{"attachment-import", "--force"}, v.authArgs()...)
-	args = append(args, v.DB, v.Entry, v.Attachment, tmpPath)
-	cmd := exec.CommandContext(ctx, "keepassxc-cli", args...)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("save token to %s: %w: %s", v.Describe(), err, strings.TrimSpace(string(out)))
+	if err := os.Rename(tmpPath, f.Path); err != nil {
+		return fmt.Errorf("save token to %s: %w", f.Describe(), err)
 	}
-	return nil
+	return os.Chmod(f.Path, 0o600)
 }
 
-func (v VaultTokenStore) authArgs() []string {
-	return []string{"--no-password", "--key-file", v.KeyFile}
+// Delete removes the local token file.
+func (f FileTokenStore) Delete(context.Context) error {
+	if err := os.Remove(f.Path); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("remove token at %s: %w", f.Describe(), err)
+	}
+	return nil
 }
 
 // TokenSource returns an oauth2 token source that persists refreshed tokens.

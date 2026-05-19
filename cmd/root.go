@@ -14,17 +14,18 @@ import (
 )
 
 type globalFlags struct {
-	storeDir string
-	jsonOut  bool
-	readOnly bool
-	full     bool
-	logLevel string
+	storeDir    string
+	credentials string
+	jsonOut     bool
+	readOnly    bool
+	full        bool
+	logLevel    string
 }
 
 var flags globalFlags
 
 // Version is the tagged module version. Release builds may override it.
-var Version = "v1.0.4"
+var Version = "v1.0.5"
 
 // Root constructs the command tree.
 func Root() *cobra.Command {
@@ -36,6 +37,7 @@ func Root() *cobra.Command {
 		SilenceErrors: true,
 	}
 	root.PersistentFlags().StringVar(&flags.storeDir, "store", "", "state directory (default: $XDG_STATE_HOME/ghcli or ~/.local/state/ghcli)")
+	root.PersistentFlags().StringVar(&flags.credentials, "credentials", "", "Google OAuth installed-app client JSON file")
 	root.PersistentFlags().BoolVar(&flags.jsonOut, "json", false, "emit JSON")
 	root.PersistentFlags().BoolVar(&flags.readOnly, "read-only", true, "agent safety flag; query commands are local/read-only")
 	root.PersistentFlags().BoolVar(&flags.full, "full", false, "disable table truncation")
@@ -88,15 +90,19 @@ func authClient(ctx context.Context) (*health.Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	creds, err := health.LoadCredentials(layout.Credentials)
+	res, err := health.LoadCredentialSource(flags.credentials)
 	if err != nil {
 		return nil, err
 	}
-	src, err := health.TokenSource(ctx, creds.Config(""), health.DefaultVaultTokenStore())
+	src, err := health.TokenSource(ctx, res.Credentials.Config(""), tokenStore(layout))
 	if err != nil {
 		return nil, err
 	}
 	return health.NewClient(ctx, src), nil
+}
+
+func tokenStore(layout paths.Layout) health.FileTokenStore {
+	return health.FileTokenStore{Path: layout.Token}
 }
 
 func signalContext(parent context.Context) (context.Context, context.CancelFunc) {

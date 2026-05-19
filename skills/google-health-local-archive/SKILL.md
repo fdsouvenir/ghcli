@@ -1,9 +1,9 @@
 ---
 name: google-health-local-archive
 description: Read a local ghcli archive of Google Health API data for Fitbit/Google health accounts. Uses read-only local JSON queries and never calls Google Health directly.
-version: 1.0.4
+version: 1.0.5
 homepage: https://github.com/fdsouvenir/ghcli
-metadata: { "openclaw": { "requires": { "bins": ["ghcli"] }, "install": [{ "id": "go-install", "kind": "go", "module": "github.com/fdsouvenir/ghcli@v1.0.4", "bins": ["ghcli"], "label": "Install ghcli with Go" }] } }
+metadata: { "openclaw": { "requires": { "bins": ["ghcli"] }, "primaryEnv": "GHCLI_GOOGLE_CREDENTIALS_JSON", "install": [{ "id": "go-install", "kind": "go", "module": "github.com/fdsouvenir/ghcli@v1.0.5", "bins": ["ghcli"], "label": "Install ghcli with Go" }] } }
 ---
 
 # Google Health (Fitbit) Local Archive
@@ -27,6 +27,13 @@ ghcli --json --read-only doctor
 If credentials, token, or archive data are missing, tell the user the exact next
 command to run. Do not run setup, login, or sync unless the user explicitly asks
 you to do that step.
+
+For OpenClaw installs, Google OAuth client JSON can be provided through
+`skills.entries.google-health-local-archive.apiKey` as plaintext JSON or as an
+OpenClaw SecretRef. OpenClaw resolves that value into
+`GHCLI_GOOGLE_CREDENTIALS_JSON` for the skill process. The user must create
+their own Google Cloud installed-app OAuth client; do not assume a shared app or
+maintainer-owned credentials.
 
 Common user-run commands:
 
