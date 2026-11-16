@@ -35,6 +35,20 @@ Install a tagged release:
 go install github.com/fdsouvenir/ghcli@v1.0.5
 ```
 
+Or download a prebuilt archive from the
+[GitHub release](https://github.com/fdsouvenir/ghcli/releases): each release
+has `ghcli_<version>_<os>_<arch>.tar.gz` for Linux and macOS (`amd64`,
+`arm64`) and a `checksums.txt` with their SHA-256 sums:
+
+```sh
+sha256sum --check --ignore-missing checksums.txt
+tar -xzf ghcli_<version>_linux_amd64.tar.gz ghcli
+./ghcli version
+```
+
+Release archives are built by `.github/workflows/release.yml` with GoReleaser
+(`.goreleaser.yaml`) when a `v*` tag is pushed; the version comes from the tag.
+
 Build from a checkout:
 
 ```sh

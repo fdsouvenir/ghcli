@@ -4,3 +4,6 @@ fbitcli
 *.db-shm
 *.db-wal
 ghapi-credentials.json
+
+# GoReleaser output
+/dist/
